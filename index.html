@@ -1,1 +1,134 @@
 
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FIFA AI PREDICTOR</title>
+<style>
+body {
+  background:#101827;
+  color:white;
+  font-family:Arial,sans-serif;
+  padding:15px;
+}
+.container {
+  max-width:500px;
+  margin:auto;
+  background:#1e293b;
+  padding:20px;
+  border-radius:15px;
+}
+h1 {color:#38bdf8;text-align:center;}
+input,select,button {
+  width:100%;
+  padding:13px;
+  margin:7px 0;
+  box-sizing:border-box;
+  border-radius:8px;
+  border:none;
+  font-size:16px;
+}
+button {
+  background:#0284c7;
+  color:white;
+  font-weight:bold;
+}
+.result {
+  background:#334155;
+  padding:15px;
+  margin-top:15px;
+  border-radius:10px;
+}
+</style>
+</head>
+<body>
+<div class="container">
+<h1>⚽ FIFA AI PREDICTOR</h1>
+<p>Analyse des matchs FIFA virtuels 4x4 et 3x3</p>
+
+<label>Format du match</label>
+<select id="format">
+<option>FIFA 4x4</option>
+<option>FIFA 3x3</option>
+</select>
+
+<h3>Résultats précédents</h3>
+<div id="inputs"></div>
+
+<button onclick="addMatch()">+ Ajouter un match</button>
+<button onclick="analyze()">ANALYSER</button>
+
+<div id="result" class="result">
+Entre les résultats pour commencer.
+</div>
+</div>
+
+<script>
+let count=0;
+
+function addMatch(){
+ count++;
+ const div=document.createElement("div");
+ div.innerHTML=`
+ <p>Match ${count}</p>
+ <input type="number" min="0" id="home${count}" placeholder="Buts domicile">
+ <input type="number" min="0" id="away${count}" placeholder="Buts extérieur">
+ `;
+ document.getElementById("inputs").appendChild(div);
+}
+
+async function analyze(){
+ const matches=[];
+
+ for(let i=1;i<=count;i++){
+  const h=document.getElementById("home"+i).value;
+  const a=document.getElementById("away"+i).value;
+
+  if(h==="" || a===""){
+   alert("Remplis tous les résultats.");
+   return;
+  }
+
+  matches.push({home:Number(h),away:Number(a)});
+ }
+
+ if(matches.length<3){
+  alert("Entre au moins 3 matchs.");
+  return;
+ }
+
+ const box=document.getElementById("result");
+ box.innerHTML="Analyse en cours...";
+
+ try{
+  const response=await fetch("/predict",{
+   method:"POST",
+   headers:{"Content-Type":"application/json"},
+   body:JSON.stringify({matches})
+  });
+
+  const data=await response.json();
+
+  if(!response.ok) throw new Error(data.error);
+
+  box.innerHTML=`
+  <h3>📊 ANALYSE FIFA AI</h3>
+  Format : ${document.getElementById("format").value}<br>
+  Matchs analysés : ${matches.length}<br>
+  Moyenne de buts : ${data.averageGoals}<br>
+  Fréquence historique Over 5.5 : ${data.over55HistoricalRate}%<br>
+  Estimation du modèle : ${data.estimatedOver55}%<br>
+  <h3>${data.recommendation}</h3>
+  ${data.note}
+  `;
+ }catch(error){
+  box.innerHTML="Erreur : "+error.message;
+ }
+}
+
+for(let i=0;i<5;i++) addMatch();
+</script>
+</body>
+</html>
+
