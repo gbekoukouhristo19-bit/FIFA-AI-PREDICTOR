@@ -1,0 +1,13 @@
+
+{
+  "name": "fifa-ai-predictor",
+  "version": "1.0.0",
+  "description": "FIFA 4x4 and 3x3 match prediction system",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js"
+  },
+  "dependencies": {
+    "express": "^4.21.2"
+  }
+}
