@@ -82,7 +82,8 @@ function addMatch() {
   document.getElementById("inputs").appendChild(div);
 }
 
-function analyze() {
+
+async function analyze() {
   const matches = [];
 
   for (let i = 1; i <= count; i++) {
@@ -94,7 +95,10 @@ function analyze() {
       return;
     }
 
-    matches.push({home: Number(h), away: Number(a)});
+    matches.push({
+      home: Number(h),
+      away: Number(a)
+    });
   }
 
   if (matches.length < 3) {
@@ -102,27 +106,36 @@ function analyze() {
     return;
   }
 
-  const totals = matches.map(m => m.home + m.away);
-  const average = totals.reduce((a,b) => a+b,0) / totals.length;
-  const over = totals.filter(g => g >= 6).length;
-  const probability = Math.round(over / totals.length * 100);
+  const resultBox = document.getElementById("result");
+  resultBox.innerHTML = "Analyse en cours...";
 
-  let advice = probability >= 65 ? "OVER 5.5 À SURVEILLER" :
-    probability >= 45 ? "PRUDENCE" : "OVER 5.5 PEU FAVORABLE";
+  try {
+    const response = await fetch("/predict", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ matches })
+    });
 
-  document.getElementById("result").innerHTML = `
-    <h3>📊 RÉSULTAT DE L'ANALYSE</h3>
-    Format : ${document.getElementById("format").value}<br>
-    Matchs analysés : ${matches.length}<br>
-    Moyenne de buts : ${average.toFixed(2)}<br>
-    Matchs avec 6 buts ou plus : ${over}<br>
-    Fréquence historique Over 5.5 : ${probability}%<br>
-    <h3>${advice}</h3>
-    <small>Cette fréquence historique n'est pas une probabilité prédictive garantie.</small>
-  `;
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || "Erreur d'analyse");
+    }
+
+    resultBox.innerHTML = `
+      <h3>ANALYSE FIFA AI</h3>
+      Format : ${document.getElementById("format").value}<br>
+      Matchs analysés : ${matches.length}<br>
+      Moyenne de buts : ${data.averageGoals}<br>
+      Fréquence historique Over 5.5 :
+      ${data.over55HistoricalRate}%<br>
+      Estimation : ${data.estimatedOver55}%<br>
+      <h3>${data.recommendation}</h3>
+      ${data.note}
+    `;
+  } catch (error) {
+    resultBox.innerHTML = "Erreur : " + error.message;
+  }
 }
-
-for (let i = 0; i < 5; i++) addMatch();
-</script>
-</body>
-</html>
